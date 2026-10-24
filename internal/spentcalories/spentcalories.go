@@ -27,10 +27,16 @@ func parseTraining(data string) (int, string, time.Duration, error) {
 	if err != nil {
 		return 0, "", 0, errors.New("Некорректное количество шагов")
 	}
+	if steps <= 0 {
+		return 0, "", 0, errors.New("Количество шагов должно быть положительным числом")
+	}
 	trainingType := dataParts[1]
 	duration, err := time.ParseDuration(dataParts[2])
 	if err != nil {
 		return 0, "", 0, errors.New("Некорректное время")
+	}
+	if duration <= 0 {
+		return 0, "", 0, errors.New("Длительность тренировки должна быть положительным числом")
 	}
 	return steps, trainingType, duration, nil
 }
@@ -41,6 +47,10 @@ func distance(steps int, height float64) float64 {
 }
 
 func meanSpeed(steps int, height float64, duration time.Duration) float64 {
+	if duration <= 0 {
+		log.Println("Некорректная длительность тренировки")
+		return 0
+	}
 	if duration.Minutes() == 0 {
 		return 0
 	}
@@ -51,8 +61,9 @@ func meanSpeed(steps int, height float64, duration time.Duration) float64 {
 func TrainingInfo(data string, weight, height float64) (string, error) {
 	steps, trainingType, duration, err := parseTraining(data)
 	if err != nil {
-		log.Println(err)
+		return "", err
 	}
+
 	switch trainingType {
 	case "Ходьба":
 		calories, err := WalkingSpentCalories(steps, weight, height, duration)
@@ -60,16 +71,18 @@ func TrainingInfo(data string, weight, height float64) (string, error) {
 			return "", err
 		}
 		return fmt.Sprintf(
-			"Тип тренировки: Ходьба\n Длительность: %v\n Дистанция: %.2f км Шаги: %d\nСкорость: %.2f км/ч\n Сожгли калорий: %.2f",
-			duration, distance(steps, height), steps, meanSpeed(steps, height, duration), calories), nil
+			"Тип тренировки: Ходьба\nДлительность: %.2f ч.\nДистанция: %.2f км.\nСкорость: %.2f км/ч\nСожгли калорий: %.2f\n",
+			duration.Hours(), distance(steps, height), meanSpeed(steps, height, duration), calories), nil
+
 	case "Бег":
 		calories, err := RunningSpentCalories(steps, weight, height, duration)
 		if err != nil {
 			return "", err
 		}
 		return fmt.Sprintf(
-			"Тип тренировки: Бег\n Длительность: %v\n Дистанция: %.2f км Шаги: %d\nСкорость: %.2f км/ч\n Сожгли калорий: %.2f",
-			duration, distance(steps, height), steps, meanSpeed(steps, height, duration), calories), nil
+			"Тип тренировки: Бег\nДлительность: %.2f ч.\nДистанция: %.2f км.\nСкорость: %.2f км/ч\nСожгли калорий: %.2f\n",
+			duration.Hours(), distance(steps, height), meanSpeed(steps, height, duration), calories), nil
+
 	default:
 		return "", errors.New("неизвестный тип тренировки")
 	}
